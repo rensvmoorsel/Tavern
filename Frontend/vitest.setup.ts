@@ -35,3 +35,6 @@ class ResizeObserverStub {
   disconnect() {}
 }
 vi.stubGlobal("ResizeObserver", ResizeObserverStub);
+
+// jsdom doesn't implement window.scrollTo, which Modal calls to restore the scroll position.
+window.scrollTo = vi.fn() as typeof window.scrollTo;

@@ -6,6 +6,8 @@ import { render, screen } from "~/testUtils";
 describe("Modal", () => {
   afterEach(() => {
     document.body.style.overflow = "";
+    document.body.style.position = "";
+    document.body.style.top = "";
   });
 
   it("renders nothing when closed", () => {
@@ -34,6 +36,42 @@ describe("Modal", () => {
       </Modal>,
     );
     expect(document.body.style.overflow).toBe("hidden");
+  });
+
+  it("pins the page at its scroll position while open and restores it on close", () => {
+    window.scrollY = 120;
+    const { rerender } = render(
+      <Modal isOpen onClose={vi.fn()} title="Details">
+        <p>Content</p>
+      </Modal>,
+    );
+    expect(document.body.style.position).toBe("fixed");
+    expect(document.body.style.top).toBe("-120px");
+
+    rerender(
+      <Modal isOpen={false} onClose={vi.fn()} title="Details">
+        <p>Content</p>
+      </Modal>,
+    );
+    expect(document.body.style.position).toBe("");
+    expect(window.scrollTo).toHaveBeenCalledWith(0, 120);
+    window.scrollY = 0;
+  });
+
+  it("keeps the saved scroll position when onClose changes while open", () => {
+    window.scrollY = 80;
+    const { rerender } = render(
+      <Modal isOpen onClose={vi.fn()} title="Details">
+        <p>Content</p>
+      </Modal>,
+    );
+    window.scrollY = 0;
+    rerender(
+      <Modal isOpen onClose={vi.fn()} title="Details">
+        <p>Content</p>
+      </Modal>,
+    );
+    expect(document.body.style.top).toBe("-80px");
   });
 
   it("calls onClose when the close button is clicked", async () => {

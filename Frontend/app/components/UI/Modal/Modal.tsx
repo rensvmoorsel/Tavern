@@ -38,20 +38,34 @@ export default function Modal({
   children,
 }: ModalProps) {
   useEffect(() => {
-    const onKeyDown = createModalKeyDownHandler(onClose);
+    if (!isOpen) return;
 
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-      window.addEventListener("keydown", onKeyDown);
-    } else {
-      document.body.style.overflow = "unset";
-    }
+    const onKeyDown = createModalKeyDownHandler(onClose);
+    window.addEventListener("keydown", onKeyDown);
+
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isOpen, onClose]);
+
+  // iOS Safari ignores overflow: hidden on <body>, so the page is pinned with position: fixed.
+  // Separate effect so a new onClose reference doesn't reset the saved scroll position.
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const scrollY = window.scrollY;
+    const { style } = document.body;
+    style.overflow = "hidden";
+    style.position = "fixed";
+    style.top = `-${scrollY}px`;
+    style.width = "100%";
 
     return () => {
-      document.body.style.overflow = "unset";
-      window.removeEventListener("keydown", onKeyDown);
+      style.overflow = "unset";
+      style.position = "";
+      style.top = "";
+      style.width = "";
+      window.scrollTo(0, scrollY);
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -79,7 +93,9 @@ export default function Modal({
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4">{children}</div>
+        <div className="flex-1 overflow-y-auto overscroll-contain p-4">
+          {children}
+        </div>
       </div>
     </div>,
     document.body,
